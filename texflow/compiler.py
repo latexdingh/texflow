@@ -1,60 +1,56 @@
-"""Run pdflatex and return structured parse results."""
+"""LaTeX compilation helpers."""
 from __future__ import annotations
+import os
 import subprocess
-import tempfile
-import shutil
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Optional
+from texflow.profile import BuildProfile, load_profile
 
-from .parser import ParseResult, parse_log
 
-
-DEFAULT_CMD = "pdflatex"
-DEFAULT_FLAGS = ["-interaction=nonstopmode", "-halt-on-error"]
+@dataclass
+class CompileResult:
+    success: bool
+    stdout: str
+    stderr: str
+    returncode: int
 
 
 def compile_latex(
-    source: Path,
-    output_dir: Optional[Path] = None,
-    cmd: str = DEFAULT_CMD,
-    extra_flags: Optional[list] = None,
-) -> tuple[ParseResult, int]:
-    """Compile *source* and return (ParseResult, returncode)."""
-    source = Path(source).resolve()
-    if output_dir is None:
-        output_dir = source.parent
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    tex_file: str,
+    profile: Optional[BuildProfile] = None,
+) -> CompileResult:
+    if profile is None:
+        profile = load_profile()
 
-    flags = DEFAULT_FLAGS + (extra_flags or [])
-    command = [cmd, *flags, f"-output-directory={output_dir}", str(source)]
+    output_dir = profile.output_dir
+    os.makedirs(output_dir, exist_ok=True)
 
-    try:
-        proc = subprocess.run(
-            command,
-            cwd=source.parent,
+    cmd = [
+        profile.engine,
+        "-interaction=nonstopmode",
+        f"-output-directory={output_dir}",
+        *profile.extra_args,
+        tex_file,
+    ]
+
+    for _ in range(max(1, profile.max_runs)):
+        result = subprocess.run(
+            cmd,
             capture_output=True,
             text=True,
-            timeout=60,
         )
-    except FileNotFoundError:
-        result = ParseResult()
-        from .parser import LatexError
-        result.errors.append(LatexError(message=f"Compiler not found: {cmd}"))
-        return result, 127
-    except subprocess.TimeoutExpired:
-        result = ParseResult()
-        from .parser import LatexError
-        result.errors.append(LatexError(message="Compilation timed out after 60s"))
-        return result, 1
 
-    log_text = proc.stdout + proc.stderr
-    return parse_log(log_text), proc.returncode
+    return CompileResult(
+        success=result.returncode == 0,
+        stdout=result.stdout,
+        stderr=result.stderr,
+        returncode=result.returncode,
+    )
 
 
-def find_output_pdf(source: Path, output_dir: Optional[Path] = None) -> Optional[Path]:
-    """Return the expected PDF path for a given source file."""
-    source = Path(source)
-    base = output_dir or source.parent
-    pdf = Path(base) / source.with_suffix(".pdf").name
-    return pdf if pdf.exists() else None
+def find_output_pdf(tex_file: str, profile: Optional[BuildProfile] = None) -> Optional[str]:
+    if profile is None:
+        profile = load_profile()
+    base = os.path.splitext(os.path.basename(tex_file))[0]
+    candidate = os.path.join(profile.output_dir, base + ".pdf")
+    return candidate if os.path.exists(candidate) else None
