@@ -61,6 +61,17 @@ def test_run_prints_diff_when_available():
     assert any("+" in line for line in output)
 
 
+def test_run_no_diff_when_pdf_missing():
+    """Diff reporter should not be called when the PDF does not exist."""
+    runner, dr, output, cr, pdf = _make_runner(returncode=0, pdf_exists=False)
+    with patch("texflow.build_runner.compile_latex", return_value=cr), \
+         patch("texflow.build_runner.find_output_pdf", return_value=pdf), \
+         patch("texflow.build_runner.parse_log") as pl:
+        pl.return_value = MagicMock(errors=[], warnings=[])
+        runner.run()
+    dr.report.assert_not_called()
+
+
 def test_preload_calls_diff_reporter():
     runner, dr, output, cr, pdf = _make_runner(pdf_exists=True)
     with patch("texflow.build_runner.find_output_pdf", return_value=pdf):
