@@ -45,9 +45,14 @@ def set_profile(key: str, value: str, file: str):
     elif key == "output_dir":
         profile.output_dir = value
     elif key == "max_runs":
-        profile.max_runs = int(value)
+        try:
+            profile.max_runs = int(value)
+        except ValueError:
+            raise click.ClickException(f"max_runs must be an integer, got: {value!r}")
     elif key == "extra_args":
         profile.extra_args = value.split()
+    elif key == "watch_extensions":
+        profile.watch_extensions = [ext.strip() for ext in value.split(",")]
     else:
         raise click.ClickException(f"Unknown profile key: {key}")
     save_profile(profile, file)
