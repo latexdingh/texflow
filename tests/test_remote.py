@@ -46,6 +46,17 @@ def test_push_directory_copies_file(tmp_path):
     assert (dest_dir / "main.pdf").exists()
 
 
+def test_push_directory_creates_dest_if_missing(tmp_path):
+    """Destination directory should be created automatically if it doesn't exist."""
+    pdf = tmp_path / "main.pdf"
+    pdf.write_bytes(b"%PDF")
+    dest_dir = tmp_path / "nested" / "dest"
+    target = RemoteTarget("local", "directory", str(dest_dir))
+    result = push_to_target(pdf, target)
+    assert result.success
+    assert (dest_dir / "main.pdf").exists()
+
+
 def test_push_unsupported_kind(tmp_path):
     pdf = tmp_path / "main.pdf"
     pdf.write_bytes(b"%PDF")
@@ -78,6 +89,12 @@ def test_remove_existing(tmp_path):
     store.add(RemoteTarget("ci", "directory", "/ci"))
     assert store.remove("ci")
     assert store.get("ci") is None
+
+
+def test_remove_nonexistent_returns_false(tmp_path):
+    """Removing a target that doesn't exist should return False without error."""
+    store = RemoteStore(tmp_path / "remotes.json")
+    assert not store.remove("ghost")
 
 
 def test_persists_across_instances(tmp_path):
