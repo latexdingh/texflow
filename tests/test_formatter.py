@@ -47,6 +47,24 @@ def test_format_errors_warning_no_line():
     assert "Overfull hbox" in out
 
 
+def test_format_errors_multiple():
+    """Multiple errors and warnings should all appear in output."""
+    errors = [
+        LatexError(message="Error one", file="a.tex", line=1),
+        LatexError(message="Error two", file="b.tex", line=2),
+    ]
+    warnings = [
+        LatexError(message="Warn one", file="a.tex", line=None),
+    ]
+    result = make_parse_result(errors=errors, warnings=warnings)
+    out = format_errors(result, use_color=False)
+    assert "Error one" in out
+    assert "Error two" in out
+    assert "Warn one" in out
+    assert out.count("ERROR") == 2
+    assert out.count("WARN") == 1
+
+
 def test_format_diff_no_changes():
     diff = make_diff([])
     out = format_diff(diff, use_color=False)
