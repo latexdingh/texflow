@@ -72,6 +72,14 @@ def test_line_count(tmp_path):
     assert result.region.line_count() >= 1
 
 
+def test_subsection_included_in_parent_section(tmp_path):
+    """Content under a subsection should appear in the enclosing section's region."""
+    p = _write(tmp_path)
+    result = find_focus(p, "Introduction")
+    assert result.ok()
+    assert "Background details." in result.region.content
+
+
 # --- CLI ---
 
 @pytest.fixture
