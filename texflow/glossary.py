@@ -38,6 +38,14 @@ class GlossaryResult:
             parts.append(f"{unused} unused")
         return "Glossary issues: " + ", ".join(parts) + "."
 
+    def undefined_terms(self) -> List[str]:
+        """Return sorted list of terms that are used but not defined."""
+        return [i.term for i in self.issues if i.kind == 'undefined']
+
+    def unused_terms(self) -> List[str]:
+        """Return sorted list of terms that are defined but never used."""
+        return [i.term for i in self.issues if i.kind == 'unused']
+
 
 _DEF_PATTERN = re.compile(
     r'\\newglossaryentry\{([^}]+)\}|\\newacronym\{([^}]+)\}'
