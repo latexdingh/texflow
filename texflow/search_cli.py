@@ -11,6 +11,19 @@ def search_group() -> None:
     """Search across LaTeX source files."""
 
 
+def _format_match(match, color: bool) -> str:
+    """Format a single search match for display."""
+    if color:
+        return (
+            click.style(str(match.file), fg="cyan")
+            + ":"
+            + click.style(str(match.line_number), fg="yellow")
+            + ": "
+            + match.line.strip()
+        )
+    return str(match)
+
+
 @search_group.command("find")
 @click.argument("query")
 @click.argument("root", default="main.tex")
@@ -40,15 +53,6 @@ def find_cmd(query: str, root: str, regex: bool, case_sensitive: bool, color: bo
         return
 
     for match in result.matches:
-        if color:
-            click.echo(
-                click.style(str(match.file), fg="cyan")
-                + ":"
-                + click.style(str(match.line_number), fg="yellow")
-                + ": "
-                + match.line.strip()
-            )
-        else:
-            click.echo(str(match))
+        click.echo(_format_match(match, color))
 
     click.echo(result.summary())
