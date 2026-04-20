@@ -78,3 +78,15 @@ def test_str_representation(tmp_path):
     s = str(result.sections[0])
     assert "Intro" in s
     assert "section" in s
+
+
+def test_word_count_excludes_commands(tmp_path):
+    """Words inside LaTeX commands should not inflate the word count."""
+    content = (
+        "\\section{Results}\n"
+        "See \\cite{smith2020} and \\ref{fig:plot} for details.\n"
+    )
+    p = _write(tmp_path, content)
+    result = gather_section_stats(p)
+    # Plain words: 'See', 'and', 'for', 'details' => 4
+    assert result.sections[0].word_count == 4
