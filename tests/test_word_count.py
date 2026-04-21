@@ -39,7 +39,6 @@ def test_count_words_basic(tmp_path):
 
 
 def test_body_words_less_than_total(tmp_path):
-    content = r"\documentclass{article}\n\begin{document}\nHello world.\n\end{document}"
     p = _write(tmp_path, 'main.tex', DOC)
     result = count_words(p)
     assert result.body_words <= result.total_words
@@ -88,3 +87,10 @@ def test_cli_non_tex_skipped(tmp_path):
     runner = CliRunner()
     res = runner.invoke(wordcount_group, ['count', str(p)])
     assert 'Skipping' in res.output
+
+
+def test_cli_missing_file(tmp_path):
+    """Invoking count on a non-existent file should exit with a non-zero code."""
+    runner = CliRunner()
+    res = runner.invoke(wordcount_group, ['count', str(tmp_path / 'missing.tex')])
+    assert res.exit_code != 0
