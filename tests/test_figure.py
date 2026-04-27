@@ -65,3 +65,18 @@ def test_summary_ok(tmp_path):
     tex = _write(tmp_path, "main.tex", "\\includegraphics{a}\n")
     result = check_figures(tex, tmp_path)
     assert "present" in result.summary()
+
+
+def test_multiple_figures_partial_missing(tmp_path):
+    """Only some figures present; result should report exactly the missing ones."""
+    (tmp_path / "present.png").write_bytes(b"")
+    tex = _write(
+        tmp_path,
+        "main.tex",
+        "\\includegraphics{present}\n\\includegraphics{missing}\n",
+    )
+    result = check_figures(tex, tmp_path)
+    assert not result.ok()
+    missing_names = [issue.name for issue in result.issues]
+    assert "missing" in missing_names
+    assert "present" not in missing_names
